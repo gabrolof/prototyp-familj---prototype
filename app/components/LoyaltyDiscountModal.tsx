@@ -18,6 +18,7 @@ interface LoyaltyDiscountModalProps {
   mainLineBase: number;
   lines: LoyaltyLineChoice[];
   decisions: Record<string, LoyaltyDecision | undefined>;
+  showBridge: boolean;
   onSetDecision: (msisdn: string, decision: LoyaltyDecision) => void;
   onConfirm: () => void;
 }
@@ -27,13 +28,19 @@ export function LoyaltyDiscountModal({
   mainLineBase,
   lines,
   decisions,
+  showBridge,
   onSetDecision,
   onConfirm,
 }: LoyaltyDiscountModalProps) {
-  const [isFetchingOffers, setIsFetchingOffers] = useState(true);
+  const [isFetchingOffers, setIsFetchingOffers] = useState(showBridge);
   const allDecided = lines.every((line) => !!decisions[line.msisdn]);
 
   useEffect(() => {
+    if (!showBridge) {
+      setIsFetchingOffers(false);
+      return;
+    }
+
     setIsFetchingOffers(true);
     const timer = window.setTimeout(() => {
       setIsFetchingOffers(false);
@@ -42,7 +49,7 @@ export function LoyaltyDiscountModal({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [lines]);
+  }, [showBridge, lines]);
 
   const buildPreviewLine = (
     line: LoyaltyLineChoice,

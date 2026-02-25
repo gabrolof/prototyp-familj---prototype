@@ -140,6 +140,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
   const [selectedTier, setSelectedTier] = useState<TierId>(initialTier);
   const [isTierQuickSelectOpen, setIsTierQuickSelectOpen] = useState(false);
   const [isLoyaltyModalOpen, setIsLoyaltyModalOpen] = useState(false);
+  const [hasSeenLoyaltyBridge, setHasSeenLoyaltyBridge] = useState(false);
   const [eligibleLoyaltyLines, setEligibleLoyaltyLines] = useState<LoyaltyEligibleLine[]>([]);
   const [loyaltyDecisionByMsisdn, setLoyaltyDecisionByMsisdn] = useState<
     Record<string, LoyaltyDecision | undefined>
@@ -223,6 +224,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
     setCustomerContext(context);
     setFlowMode(resolvedMode);
     setIsTierQuickSelectOpen(false);
+    setHasSeenLoyaltyBridge(false);
     setLinesAndResetCounter(nextLines);
 
     if (resolvedMode === "MANAGE" && context.familyTier) {
@@ -272,30 +274,24 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
         db: customerDb,
       });
 
-      const shouldApplyLoyaltyChoice = customerContext.hasFamily && determinedOffer.offerType === "RENEWAL";
+      if (determinedOffer.offerType === "RENEWAL") {
+        const decision = loyaltyDecisionByMsisdn[line.msisdn.trim()];
 
-      if (shouldApplyLoyaltyChoice) {
-        const decision = loyaltyDecisionByMsisdn[line.msisdn];
-
-        if (decision === "DECLINE") {
-          lookup[line.id] = {
-            offerType: "NONE",
-            discountSek: 0,
-            bindingMonths: 0,
-            reasonText: "Loyalty discount was declined. Standard pricing applies.",
-          };
+        if (decision === "ACCEPT") {
+          lookup[line.id] = determinedOffer;
           continue;
         }
 
-        if (decision !== "ACCEPT") {
-          lookup[line.id] = {
-            offerType: "NONE",
-            discountSek: 0,
-            bindingMonths: 0,
-            reasonText: "Choose whether to claim the loyalty discount for this line.",
-          };
-          continue;
-        }
+        lookup[line.id] = {
+          offerType: "NONE",
+          discountSek: 0,
+          bindingMonths: 0,
+          reasonText:
+            decision === "DECLINE"
+              ? "Loyalty discount was declined. Standard pricing applies."
+              : "Claim offer is available for this line.",
+        };
+        continue;
       }
 
       lookup[line.id] = determinedOffer;
@@ -362,18 +358,25 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
   const showClaimOfferCtaByLineId = useMemo(() => {
     const lookup: Record<string, boolean> = {};
 
-    if (!customerContext || !customerContext.hasFamily) {
+    if (!customerContext || !loggedInSsn) {
       return lookup;
     }
 
     for (const line of lines) {
       const msisdn = line.msisdn.trim();
-      if (!msisdn || loyaltyDecisionByMsisdn[msisdn] !== "DECLINE") {
+      if (!msisdn || loyaltyDecisionByMsisdn[msisdn] === "ACCEPT") {
         continue;
       }
 
-      const ownedLine = customerContext.ownedNumbers.find((number) => number.msisdn === msisdn);
-      if (!ownedLine || (ownedLine.inBinding && !ownedLine.bindingCompatibleWithRenewalOffer)) {
+      const determinedOffer = determineOffer({
+        ssn: loggedInSsn,
+        msisdn,
+        lineRole: line.role,
+        customerContext,
+        db: customerDb,
+      });
+
+      if (determinedOffer.offerType !== "RENEWAL") {
         continue;
       }
 
@@ -381,7 +384,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
     }
 
     return lookup;
-  }, [lines, loyaltyDecisionByMsisdn, customerContext]);
+  }, [lines, loyaltyDecisionByMsisdn, customerContext, loggedInSsn, customerDb]);
 
   const tierLabel = tiers.find((tier) => tier.id === selectedTier)?.label ?? selectedTier;
   const ownedNumbers =
@@ -467,6 +470,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
     setSelectedTier(initialTier);
     setIsTierQuickSelectOpen(false);
     setIsLoyaltyModalOpen(false);
+    setHasSeenLoyaltyBridge(false);
     setEligibleLoyaltyLines([]);
     setLoyaltyDecisionByMsisdn({});
     setShowStep1NumberErrors(false);
@@ -500,35 +504,26 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
       return;
     }
 
-    if (!normalizedMsisdn || !targetLine || !customerContext || !customerContext.hasFamily) {
+    if (!normalizedMsisdn || !targetLine || !customerContext || !loggedInSsn) {
       return;
     }
 
-    const ownedLine = customerContext.ownedNumbers.find((number) => number.msisdn === normalizedMsisdn);
-    if (!ownedLine) {
-      return;
-    }
-
-    if (ownedLine.inBinding && !ownedLine.bindingCompatibleWithRenewalOffer) {
-      return;
-    }
-
-    if (loyaltyDecisionByMsisdn[normalizedMsisdn] !== undefined) {
-      return;
-    }
-
-    const singleLineChoice: LoyaltyEligibleLine = {
+    const determinedOffer = determineOffer({
+      ssn: loggedInSsn,
       msisdn: normalizedMsisdn,
-      role: targetLine.role,
-      discountSek: getRenewalDiscount(targetLine.role),
-    };
+      lineRole: targetLine.role,
+      customerContext,
+      db: customerDb,
+    });
 
-    setEligibleLoyaltyLines([singleLineChoice]);
+    if (determinedOffer.offerType !== "RENEWAL") {
+      return;
+    }
+
     setLoyaltyDecisionByMsisdn((prev) => ({
       ...prev,
-      [normalizedMsisdn]: prev[normalizedMsisdn],
+      [normalizedMsisdn]: undefined,
     }));
-    setIsLoyaltyModalOpen(true);
   };
 
   const handleRemoveLine = (lineId: string) => {
@@ -587,6 +582,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
     setLoggedInSsn(ssn);
     setCustomerContext(context);
     setIsTierQuickSelectOpen(false);
+    setHasSeenLoyaltyBridge(false);
     setLinesAndResetCounter(nextLines);
 
     if (context.familyTier && nextMode === "MANAGE") {
@@ -635,7 +631,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
   };
 
   const handleClaimOfferForLine = (lineId: string) => {
-    if (!customerContext || !customerContext.hasFamily) {
+    if (!customerContext || !loggedInSsn) {
       return;
     }
 
@@ -649,8 +645,15 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
       return;
     }
 
-    const ownedLine = customerContext.ownedNumbers.find((number) => number.msisdn === msisdn);
-    if (!ownedLine || (ownedLine.inBinding && !ownedLine.bindingCompatibleWithRenewalOffer)) {
+    const determinedOffer = determineOffer({
+      ssn: loggedInSsn,
+      msisdn,
+      lineRole: targetLine.role,
+      customerContext,
+      db: customerDb,
+    });
+
+    if (determinedOffer.offerType !== "RENEWAL") {
       return;
     }
 
@@ -662,7 +665,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
       {
         msisdn,
         role: targetLine.role,
-        discountSek: getRenewalDiscount(targetLine.role),
+        discountSek: determinedOffer.discountSek,
       },
     ]);
     setIsLoyaltyModalOpen(true);
@@ -681,6 +684,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
       return;
     }
 
+    setHasSeenLoyaltyBridge(true);
     setIsLoyaltyModalOpen(false);
   };
 
@@ -695,6 +699,7 @@ export function FamilyFlowClient({ initialMode, initialTier }: FamilyFlowClientP
           mainLineBase={mainLineBasePrice}
           lines={eligibleLoyaltyLines}
           decisions={loyaltyDecisionByMsisdn}
+          showBridge={!hasSeenLoyaltyBridge}
           onSetDecision={handleSetLoyaltyDecision}
           onConfirm={handleConfirmLoyaltyChoices}
         />
