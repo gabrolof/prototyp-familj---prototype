@@ -12,7 +12,7 @@ export function LandingPlanChooser({ tiers }: LandingPlanChooserProps) {
   return (
     <>
       <section className="panel mb-6 border-slate-200 bg-gradient-to-b from-white via-white to-slate-50">
-        <h2 className="mb-1 text-xl font-semibold md:text-2xl">What fits your family?</h2>
+        <h2 className="mb-1 text-xl font-semibold md:text-2xl">New to family? start here!</h2>
         <p className="mb-4 text-sm text-slate-600 md:text-[15px]">
           Pick a plan to start checkout. Prices below assume new-customer discounts.
         </p>
@@ -63,9 +63,14 @@ export function LandingPlanChooser({ tiers }: LandingPlanChooserProps) {
             );
           })}
         </div>
+
+        <p className="mt-4 text-sm text-slate-600">
+          The prices shown above are for new customers. Based on your current contract, pricing can
+          change in the next step.
+        </p>
       </section>
 
-      <section className="rounded-2xl border border-slate-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 shadow-[0_18px_30px_-24px_rgba(15,23,42,0.75)]">
+      <section className="mb-6 rounded-2xl border border-slate-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 shadow-[0_18px_30px_-24px_rgba(15,23,42,0.75)]">
         <p className="mb-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-ink shadow-sm">
           Existing Customer Path
         </p>

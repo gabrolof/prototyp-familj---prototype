@@ -5,18 +5,23 @@ export default function LandingPage() {
   const tiers = getTierDefinitions();
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-4 py-8 md:py-10">
-      <header className="panel mb-8 border-slate-200 bg-gradient-to-r from-white via-white to-slate-50">
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-sun">Family plans</p>
-        <h1 className="mt-1 text-3xl font-bold leading-tight md:text-4xl">
-          Pick a plan that fits your household
-        </h1>
-        <p className="mt-3 max-w-3xl text-slate-600">
-          Compare data tiers, add family members, and estimate your monthly cost before checkout.
-        </p>
-      </header>
+    <>
+      <section className="w-full bg-[#211f45]">
+        <div className="mx-auto max-w-6xl px-4 pt-5 pb-6 md:pt-7 md:pb-7">
+          <h1 className="text-3xl font-semibold tracking-tight text-white md:text-5xl">
+            Family plans
+          </h1>
+          <div className="mt-6 flex flex-wrap gap-4 text-base text-white/95 md:gap-8 md:text-lg">
+            <p>✓ Lower cost</p>
+            <p>✓ One invoice</p>
+            <p>✓ Best 5G coverage in Sweden</p>
+          </div>
+        </div>
+      </section>
 
-      <LandingPlanChooser tiers={tiers} />
-    </main>
+      <main className="mx-auto min-h-screen max-w-6xl px-4 py-8 md:py-10">
+        <LandingPlanChooser tiers={tiers} />
+      </main>
+    </>
   );
 }
