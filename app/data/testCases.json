@@ -1,0 +1,91 @@
+[
+  {
+    "caseId": "C1_NEW_CUSTOMER_FULL_NEW_LINES",
+    "description": "Unknown SSN starts a new family with two new numbers and one monthly device.",
+    "ssn": "19991212-9999",
+    "actions": [
+      { "step": "tier", "value": "UNLIMITED" },
+      { "step": "mainMsisdn", "value": "0709991002" },
+      { "step": "subMsisdns", "value": ["0709991003"] },
+      { "step": "devices", "value": [{ "msisdn": "0709991002", "deviceId": "pixel-lite" }] }
+    ],
+    "expectedOutcome": {
+      "offers": [
+        { "msisdn": "0709991002", "role": "MAIN", "offerType": "NEW_CUSTOMER", "discountSek": 100 },
+        { "msisdn": "0709991003", "role": "SUB", "offerType": "NEW_CUSTOMER", "discountSek": 50 }
+      ],
+      "totals": {
+        "monthlyTotal": 627,
+        "oneTimeTotal": 0,
+        "bindingMonthsMax": 24
+      }
+    }
+  },
+  {
+    "caseId": "C2_EXISTING_OWNER_MIXED_LINE_TYPES",
+    "description": "Existing customer with no family starts family; one existing number and one new number.",
+    "ssn": "19851212-1234",
+    "actions": [
+      { "step": "tier", "value": "15_GB" },
+      { "step": "mainMsisdn", "value": "0701000001" },
+      { "step": "subMsisdns", "value": ["0709991001"] }
+    ],
+    "expectedOutcome": {
+      "offers": [
+        { "msisdn": "0701000001", "role": "MAIN", "offerType": "RENEWAL", "discountSek": 80 },
+        { "msisdn": "0709991001", "role": "SUB", "offerType": "NEW_CUSTOMER", "discountSek": 50 }
+      ],
+      "totals": {
+        "monthlyTotal": 328,
+        "oneTimeTotal": 0,
+        "bindingMonthsMax": 24
+      }
+    }
+  },
+  {
+    "caseId": "C2_EXISTING_RENEWAL_BLOCKED_BINDING",
+    "description": "Existing customer starts family with renewal blocked on main due to binding incompatibility.",
+    "ssn": "19851212-1234",
+    "actions": [
+      { "step": "tier", "value": "UNLIMITED_MAX" },
+      { "step": "mainMsisdn", "value": "0701000003" },
+      { "step": "subMsisdns", "value": ["0701000002", "0709991003"] }
+    ],
+    "expectedOutcome": {
+      "offers": [
+        { "msisdn": "0701000003", "role": "MAIN", "offerType": "NONE", "discountSek": 0 },
+        { "msisdn": "0701000002", "role": "SUB", "offerType": "RENEWAL", "discountSek": 40 },
+        { "msisdn": "0709991003", "role": "SUB", "offerType": "NEW_CUSTOMER", "discountSek": 50 }
+      ],
+      "totals": {
+        "monthlyTotal": 877,
+        "oneTimeTotal": 0,
+        "bindingMonthsMax": 24
+      }
+    }
+  },
+  {
+    "caseId": "A5_EXISTING_FAMILY_UPGRADE_AND_ADD_LINE",
+    "description": "Existing family customer upgrades tier and adds one new sub-line with a one-time device.",
+    "ssn": "19770707-7777",
+    "actions": [
+      { "step": "mode", "value": "manage" },
+      { "step": "tierUpgrade", "value": "UNLIMITED_MAX" },
+      { "step": "addSubMsisdns", "value": ["0702999999"] },
+      { "step": "devices", "value": [{ "msisdn": "0702999999", "deviceId": "family-tab" }] }
+    ],
+    "expectedOutcome": {
+      "offers": [
+        { "msisdn": "0702000001", "role": "MAIN", "offerType": "RENEWAL", "discountSek": 80 },
+        { "msisdn": "0702000002", "role": "SUB", "offerType": "RENEWAL", "discountSek": 40 },
+        { "msisdn": "0702000003", "role": "SUB", "offerType": "NONE", "discountSek": 0 },
+        { "msisdn": "0702999999", "role": "SUB", "offerType": "NEW_CUSTOMER", "discountSek": 50 }
+      ],
+      "totals": {
+        "monthlyTotal": 1066,
+        "oneTimeTotal": 1499,
+        "bindingMonthsMax": 24
+      }
+    }
+  }
+]

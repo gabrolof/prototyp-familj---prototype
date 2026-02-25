@@ -1,0 +1,52 @@
+{
+  "tiers": [
+    {
+      "id": "15_GB",
+      "label": "15 GB",
+      "description": "Lower usage family plan with stable monthly cost.",
+      "prices": { "main": 229, "sub": 129 }
+    },
+    {
+      "id": "UNLIMITED",
+      "label": "Unlimited",
+      "description": "Full-speed unlimited data for main line, lower sub-line rate.",
+      "prices": { "main": 379, "sub": 249 }
+    },
+    {
+      "id": "UNLIMITED_MAX",
+      "label": "Unlimited Max",
+      "description": "Premium unlimited plan with highest baseline speed/profile.",
+      "prices": { "main": 429, "sub": 269 }
+    }
+  ],
+  "devices": [
+    {
+      "id": "pixel-lite",
+      "name": "Pixel Lite",
+      "priceType": "monthly",
+      "price": 149,
+      "shortDescription": "Entry Android device, paid monthly."
+    },
+    {
+      "id": "nordic-pro",
+      "name": "Nordic Pro",
+      "priceType": "monthly",
+      "price": 219,
+      "shortDescription": "Higher-spec Android device, paid monthly."
+    },
+    {
+      "id": "apple-mini",
+      "name": "Apple Mini",
+      "priceType": "oneTime",
+      "price": 4999,
+      "shortDescription": "Compact iOS device, one-time payment."
+    },
+    {
+      "id": "family-tab",
+      "name": "Family Tab",
+      "priceType": "oneTime",
+      "price": 1499,
+      "shortDescription": "Budget tablet device, one-time payment."
+    }
+  ]
+}

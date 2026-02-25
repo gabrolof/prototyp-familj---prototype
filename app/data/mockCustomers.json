@@ -1,0 +1,188 @@
+[
+  {
+    "ssn": "19900101-0001",
+    "hasFamily": false,
+    "familyTier": null,
+    "ownedPhoneNumbers": [],
+    "existingFamilyLines": []
+  },
+  {
+    "ssn": "19851212-1234",
+    "hasFamily": false,
+    "familyTier": null,
+    "ownedPhoneNumbers": [
+      {
+        "msisdn": "0701000001",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0701000002",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0701000003",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": false
+      }
+    ],
+    "existingFamilyLines": []
+  },
+  {
+    "ssn": "19770707-7777",
+    "hasFamily": true,
+    "familyTier": "UNLIMITED",
+    "ownedPhoneNumbers": [
+      {
+        "msisdn": "0702000001",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0702000002",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0702000003",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": false
+      },
+      {
+        "msisdn": "0702000099",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      }
+    ],
+    "existingFamilyLines": ["0702000001", "0702000002", "0702000003"]
+  },
+  {
+    "ssn": "20020202-2222",
+    "hasFamily": false,
+    "familyTier": null,
+    "ownedPhoneNumbers": [
+      {
+        "msisdn": "0703000001",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      }
+    ],
+    "existingFamilyLines": []
+  },
+  {
+    "ssn": "19660606-0606",
+    "hasFamily": true,
+    "familyTier": "UNLIMITED_MAX",
+    "ownedPhoneNumbers": [
+      {
+        "msisdn": "0704000001",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0704000002",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0704000003",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": false
+      },
+      {
+        "msisdn": "0704000004",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0704000099",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      }
+    ],
+    "existingFamilyLines": ["0704000001", "0704000002", "0704000003", "0704000004"]
+  },
+  {
+    "ssn": "19730303-0303",
+    "hasFamily": false,
+    "familyTier": null,
+    "ownedPhoneNumbers": [
+      {
+        "msisdn": "0705000001",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": false
+      },
+      {
+        "msisdn": "0705000002",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": false
+      },
+      {
+        "msisdn": "0705000003",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": true
+      }
+    ],
+    "existingFamilyLines": []
+  },
+  {
+    "ssn": "19940404-0404",
+    "hasFamily": true,
+    "familyTier": "15_GB",
+    "ownedPhoneNumbers": [
+      {
+        "msisdn": "0706000001",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0706000002",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": false
+      }
+    ],
+    "existingFamilyLines": ["0706000001", "0706000002"]
+  },
+  {
+    "ssn": "19880808-0808",
+    "hasFamily": false,
+    "familyTier": null,
+    "ownedPhoneNumbers": [
+      {
+        "msisdn": "0707000001",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0707000002",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0707000003",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": true
+      },
+      {
+        "msisdn": "0707000004",
+        "inBinding": false,
+        "bindingCompatibleWithRenewalOffer": true
+      }
+    ],
+    "existingFamilyLines": []
+  },
+  {
+    "ssn": "19711111-1111",
+    "hasFamily": false,
+    "familyTier": null,
+    "ownedPhoneNumbers": [
+      {
+        "msisdn": "0708000001",
+        "inBinding": true,
+        "bindingCompatibleWithRenewalOffer": false
+      }
+    ],
+    "existingFamilyLines": []
+  }
+]

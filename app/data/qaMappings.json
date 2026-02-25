@@ -1,0 +1,103 @@
+{
+  "scenariosBySsn": {
+    "19900101-0001": "New customer record (exists but owns no phone numbers)",
+    "19851212-1234": "Existing customer, no family, mixed renewal compatibility",
+    "19770707-7777": "Existing customer with active family (Unlimited)",
+    "20020202-2222": "Existing customer with one non-family number",
+    "19660606-0606": "Existing customer with large family (Unlimited Max), mixed renewal states",
+    "19730303-0303": "Existing customer, no family, mostly renewal blocked numbers",
+    "19940404-0404": "Existing customer with small active family (15 GB), all lines renewal eligible",
+    "19880808-0808": "Existing customer, no family, several renewal-eligible numbers",
+    "19711111-1111": "Existing customer, no family, single number blocked for renewal",
+    "19991212-9999": "Unknown SSN in DB (treated as NEW)"
+  },
+  "msisdnPools": {
+    "newLineEligible": [
+      "0709991001",
+      "0709991002",
+      "0709991003",
+      "0709991004",
+      "0709991005"
+    ],
+    "renewalEligible": [
+      "0701000001",
+      "0701000002",
+      "0702000001",
+      "0702000002",
+      "0704000002",
+      "0705000003",
+      "0706000001",
+      "0707000003"
+    ],
+    "renewalBlockedBinding": [
+      "0701000003",
+      "0702000003",
+      "0704000003",
+      "0705000001",
+      "0705000002",
+      "0708000001"
+    ]
+  },
+  "explicitExamples": [
+    {
+      "label": "Renewal applies",
+      "ssn": "19851212-1234",
+      "msisdn": "0701000001",
+      "explanation": "Existing line owned by SSN and renewal is binding-compatible."
+    },
+    {
+      "label": "Renewal blocked",
+      "ssn": "19851212-1234",
+      "msisdn": "0701000003",
+      "explanation": "Existing line is in binding and marked incompatible with renewal offer."
+    },
+    {
+      "label": "Family renewal blocked",
+      "ssn": "19770707-7777",
+      "msisdn": "0702000003",
+      "explanation": "Existing family line in binding with blocked renewal compatibility."
+    },
+    {
+      "label": "New-line offer on existing owner",
+      "ssn": "19851212-1234",
+      "msisdn": "0709991001",
+      "explanation": "MSISDN is not owned by SSN, so line is treated as new-line offer."
+    },
+    {
+      "label": "Large family mixed: blocked",
+      "ssn": "19660606-0606",
+      "msisdn": "0704000003",
+      "explanation": "Unlimited Max family account where one line is blocked for renewal."
+    },
+    {
+      "label": "Large family mixed: eligible",
+      "ssn": "19660606-0606",
+      "msisdn": "0704000002",
+      "explanation": "Unlimited Max family account where renewal remains eligible."
+    },
+    {
+      "label": "Mostly blocked account",
+      "ssn": "19730303-0303",
+      "msisdn": "0705000001",
+      "explanation": "No-family customer where this number is in binding and blocked."
+    },
+    {
+      "label": "Blocked account eligible line",
+      "ssn": "19730303-0303",
+      "msisdn": "0705000003",
+      "explanation": "Same account includes one line that is renewal compatible."
+    },
+    {
+      "label": "Single blocked number",
+      "ssn": "19711111-1111",
+      "msisdn": "0708000001",
+      "explanation": "No-family customer with one owned line that is blocked for renewal."
+    },
+    {
+      "label": "Completely new customer",
+      "ssn": "19991212-9999",
+      "msisdn": "0709991002",
+      "explanation": "SSN not found in DB, classified as NEW and gets new customer offer."
+    }
+  ]
+}
