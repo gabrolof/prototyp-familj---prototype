@@ -19,6 +19,15 @@ interface LineEditorProps {
   showClaimOfferCtaByLineId?: Record<string, boolean>;
   onClaimOfferForLine?: (id: string) => void;
   showMissingNumberErrors?: boolean;
+  showAddLineAction?: boolean;
+  allowRemoveSubLines?: boolean;
+  showAllOwnedNumbersInPicker?: boolean;
+  hideSavingsInConfigurator?: boolean;
+  addLineLabel?: string;
+  minimalOfferHint?: boolean;
+  addLineDisabled?: boolean;
+  collapseUnchangedLines?: boolean;
+  familyPlanListMode?: boolean;
 }
 
 function offerBadgeClass(offerType: OfferResult["offerType"]): string {
@@ -75,15 +84,29 @@ export function LineEditor({
   showClaimOfferCtaByLineId = {},
   onClaimOfferForLine,
   showMissingNumberErrors = false,
+  showAddLineAction = true,
+  allowRemoveSubLines = true,
+  showAllOwnedNumbersInPicker = false,
+  hideSavingsInConfigurator = false,
+  addLineLabel = "Add extra line",
+  minimalOfferHint = false,
+  addLineDisabled = false,
+  collapseUnchangedLines = false,
+  familyPlanListMode = false,
 }: LineEditorProps) {
   const [numberPickerLineId, setNumberPickerLineId] = useState<string | null>(null);
+  const [isUnchangedLinesOpen, setIsUnchangedLinesOpen] = useState(false);
   const activeLines = lines.filter((line) => !isNoChangeState(offersByLineId[line.id]));
   const noChangeLines = lines.filter((line) => isNoChangeState(offersByLineId[line.id]));
   const primaryActiveLines = activeLines.filter((line) => line.role === "MAIN");
   const extraActiveLines = activeLines.filter((line) => line.role === "SUB");
   const pickerLine = numberPickerLineId ? lines.find((line) => line.id === numberPickerLineId) ?? null : null;
 
-  const getAvailableOwnedNumbers = (lineId: string, currentMsisdn: string) => {
+  const getOwnedNumbersForPicker = (lineId: string, currentMsisdn: string) => {
+    if (showAllOwnedNumbersInPicker) {
+      return ownedNumbers;
+    }
+
     const usedNumbers = new Set(
       lines
         .filter((candidate) => candidate.id !== lineId)
@@ -91,15 +114,19 @@ export function LineEditor({
         .filter(Boolean),
     );
 
-    return ownedNumbers.filter(
-      (number) => !usedNumbers.has(number.msisdn) || number.msisdn === currentMsisdn,
-    );
+    return ownedNumbers.filter((number) => !usedNumbers.has(number.msisdn) || number.msisdn === currentMsisdn);
   };
 
   const pickerAvailableNumbers = pickerLine
-    ? getAvailableOwnedNumbers(pickerLine.id, pickerLine.msisdn)
+    ? getOwnedNumbersForPicker(pickerLine.id, pickerLine.msisdn)
     : [];
   const hasNoChangeLines = noChangeLines.length > 0;
+  const familyPlanLines = familyPlanListMode
+    ? lines.filter((line) => line.existingFamilyLine)
+    : [];
+  const addFamilyLines = familyPlanListMode
+    ? lines.filter((line) => !line.existingFamilyLine)
+    : [];
 
   const renderActiveLineCard = (line: CartLineDraft) => {
     const offer = offersByLineId[line.id];
@@ -110,7 +137,7 @@ export function LineEditor({
     const showMissingNumberError = showMissingNumberErrors && !hasValidatedNumber && !isLockedExisting;
     const availableOwnedNumbers = isLockedExisting
       ? []
-      : getAvailableOwnedNumbers(line.id, line.msisdn);
+      : getOwnedNumbersForPicker(line.id, line.msisdn);
     const showNumberPickerTrigger = !isLockedExisting && availableOwnedNumbers.length > 0;
     const totalLineSavings = lineSavingsByLineId[line.id]?.totalSavings ?? 0;
     const showClaimOfferCta = !!showClaimOfferCtaByLineId[line.id];
@@ -185,7 +212,7 @@ export function LineEditor({
                 </button>
               ) : null}
             </div>
-            {line.role === "SUB" ? (
+            {line.role === "SUB" && allowRemoveSubLines && !isLockedExisting ? (
               <button
                 type="button"
                 className="button-secondary md:w-28 md:self-end"
@@ -197,9 +224,15 @@ export function LineEditor({
           </div>
         )}
 
-        <p className="mt-2 text-xs text-slate-600">
-          {offer?.reasonText ?? "Offer details appear after account verification."}
-        </p>
+        {minimalOfferHint ? (
+          !hasValidatedNumber ? (
+            <p className="mt-2 text-xs text-slate-600">Enter a number to evaluate this line.</p>
+          ) : null
+        ) : (
+          <p className="mt-2 text-xs text-slate-600">
+            {offer?.reasonText ?? "Offer details appear after account verification."}
+          </p>
+        )}
         {showClaimOfferCta && onClaimOfferForLine ? (
           <button
             type="button"
@@ -209,7 +242,7 @@ export function LineEditor({
             Claim offer
           </button>
         ) : null}
-        {hasValidatedNumber ? (
+        {!hideSavingsInConfigurator && hasValidatedNumber ? (
           <p
             className={`mt-1 text-xs ${
               totalLineSavings > 0 ? "font-semibold text-green-700" : "text-slate-600"
@@ -230,100 +263,243 @@ export function LineEditor({
         Keep one primary line and add at least one extra line for your family plan.
       </p>
 
-      {primaryActiveLines.length > 0 ? (
-        <div>
-          <p className="text-sm font-semibold text-slate-800">Primary line</p>
-          <p className="mt-1 text-xs text-slate-600">
-            This number anchors your family plan and pricing.
-          </p>
-          <div className="mt-3 space-y-3">
-            {primaryActiveLines.map((line) => renderActiveLineCard(line))}
-          </div>
-        </div>
-      ) : null}
+      {familyPlanListMode ? (
+        <>
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Your family plan</p>
+            <div className="mt-3 overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
+              {familyPlanLines.length > 0 ? (
+                familyPlanLines.map((line, index) => {
+                  const offer = offersByLineId[line.id];
+                  const showClaimOfferCta = !!showClaimOfferCtaByLineId[line.id];
 
-      {extraActiveLines.length > 0 ? (
-        <div>
-          <p className="text-sm font-semibold text-slate-800">Family member lines</p>
-          <p className="mt-1 text-xs text-slate-600">
-            Add, validate, and manage each extra line in your family.
-          </p>
-          <div className="mt-3 space-y-3">
-            {extraActiveLines.map((line) => renderActiveLineCard(line))}
-          </div>
-        </div>
-      ) : null}
-
-      {hasNoChangeLines ? (
-        <div className="pt-1">
-          <button type="button" className="button-secondary" onClick={() => onAddSubLine()}>
-            Add extra line
-          </button>
-        </div>
-      ) : null}
-
-      {hasNoChangeLines ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="h-px flex-1 bg-slate-300" />
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              Unchanged lines
-            </span>
-            <div className="h-px flex-1 bg-slate-300" />
-          </div>
-          <div className="rounded-2xl border border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100 p-3">
-            <p className="text-xs text-slate-700">
-              Renewal is blocked on these lines, so they stay on current terms.
-            </p>
-            <div className="mt-3 space-y-3">
-              {noChangeLines.map((line) => {
-                const offer = offersByLineId[line.id];
-
-                return (
-                  <div key={line.id} className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">
-                        {lineRoleLabel(line)}
-                      </span>
-                      {!line.existingFamilyLine ? (
-                        <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
-                          Existing number
-                        </span>
+                  return (
+                    <div
+                      key={line.id}
+                      className={`p-3 ${index > 0 ? "border-t border-slate-200" : ""}`}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">
+                            {line.role === "MAIN" ? "Primary line" : "Member"}
+                          </span>
+                          <p className="mt-2 text-sm font-semibold text-ink">
+                            {line.msisdn || "No number available"}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {offer?.offerType === "RENEWAL" ? (
+                            <span className="rounded-full bg-violet-100 px-2 py-1 text-xs font-semibold text-violet-800">
+                              Loyalty offer
+                            </span>
+                          ) : null}
+                          {showClaimOfferCta && onClaimOfferForLine ? (
+                            <button
+                              type="button"
+                              className="text-xs font-semibold text-violet-700 underline hover:text-violet-900"
+                              onClick={() => onClaimOfferForLine(line.id)}
+                            >
+                              Claim offer
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                      {isNoChangeState(offer) ? (
+                        <p className="mt-2 text-xs text-slate-600">
+                          {offer?.reasonText ?? "No offer changes apply."}
+                        </p>
                       ) : null}
                     </div>
-                    <div className="w-full max-w-[22ch] rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 shadow-[inset_0_1px_2px_rgba(15,23,42,0.05)]">
-                      {line.msisdn || "No number available"}
-                    </div>
-                    <p className="mt-2 text-xs text-slate-600">
-                      {offer?.reasonText ?? "No offer changes apply."}
-                    </p>
-                    {!line.existingFamilyLine ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="button-secondary"
-                          onClick={() => onChangeMsisdn(line.id, "")}
-                        >
-                          Edit number
-                        </button>
-                        {line.role === "SUB" ? (
-                          <button
-                            type="button"
-                            className="button-secondary"
-                            onClick={() => onRemoveLine(line.id)}
-                          >
-                            Remove line
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="p-3 text-sm text-slate-600">No existing family lines found.</div>
+              )}
             </div>
           </div>
-        </div>
-      ) : null}
+
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Add family</p>
+            <p className="mt-1 text-xs text-slate-600">
+              Add new members to your current family plan.
+            </p>
+            {addFamilyLines.length > 0 ? (
+              <div className="mt-3 space-y-3">
+                {addFamilyLines.map((line) => renderActiveLineCard(line))}
+              </div>
+            ) : null}
+            {showAddLineAction ? (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  className={`button-secondary ${addLineDisabled ? "cursor-not-allowed opacity-60 hover:translate-y-0" : ""}`}
+                  onClick={() => onAddSubLine()}
+                  disabled={addLineDisabled}
+                >
+                  {addLineLabel}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </>
+      ) : (
+        <>
+          {primaryActiveLines.length > 0 ? (
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Primary line</p>
+              <p className="mt-1 text-xs text-slate-600">
+                This number anchors your family plan and pricing.
+              </p>
+              <div className="mt-3 space-y-3">
+                {primaryActiveLines.map((line) => renderActiveLineCard(line))}
+              </div>
+            </div>
+          ) : null}
+
+          {extraActiveLines.length > 0 ? (
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Family member lines</p>
+              <p className="mt-1 text-xs text-slate-600">
+                Add, validate, and manage each extra line in your family.
+              </p>
+              <div className="mt-3 space-y-3">
+                {extraActiveLines.map((line) => renderActiveLineCard(line))}
+              </div>
+            </div>
+          ) : null}
+
+          {hasNoChangeLines ? (
+            <div className="space-y-3">
+              {collapseUnchangedLines ? (
+                <>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 text-left"
+                    onClick={() => setIsUnchangedLinesOpen((open) => !open)}
+                    aria-expanded={isUnchangedLinesOpen}
+                  >
+                    <span className="text-sm font-semibold text-slate-800">
+                      Unchanged lines ({noChangeLines.length})
+                    </span>
+                    <span className="text-xs font-medium text-slate-600">
+                      {isUnchangedLinesOpen ? "Hide" : "Show"}
+                    </span>
+                  </button>
+                  {isUnchangedLinesOpen ? (
+                    <div className="space-y-3">
+                      {noChangeLines.map((line) => {
+                        const offer = offersByLineId[line.id];
+
+                        return (
+                          <div key={line.id} className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm">
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">
+                                {lineRoleLabel(line)}
+                              </span>
+                              {!line.existingFamilyLine ? (
+                                <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
+                                  Existing number
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="w-full max-w-[22ch] rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 shadow-[inset_0_1px_2px_rgba(15,23,42,0.05)]">
+                              {line.msisdn || "No number available"}
+                            </div>
+                            <p className="mt-2 text-xs text-slate-600">
+                              {offer?.reasonText ?? "No offer changes apply."}
+                            </p>
+                            {!line.existingFamilyLine ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  className="button-secondary"
+                                  onClick={() => onChangeMsisdn(line.id, "")}
+                                >
+                                  Edit number
+                                </button>
+                                {line.role === "SUB" && allowRemoveSubLines ? (
+                                  <button
+                                    type="button"
+                                    className="button-secondary"
+                                    onClick={() => onRemoveLine(line.id)}
+                                  >
+                                    Remove line
+                                  </button>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="h-px flex-1 bg-slate-300" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Unchanged lines
+                    </span>
+                    <div className="h-px flex-1 bg-slate-300" />
+                  </div>
+                  <div className="rounded-2xl border border-slate-300 bg-gradient-to-b from-slate-50 to-slate-100 p-3">
+                    <p className="text-xs text-slate-700">
+                      Renewal is blocked on these lines, so they stay on current terms.
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      {noChangeLines.map((line) => {
+                        const offer = offersByLineId[line.id];
+
+                        return (
+                          <div key={line.id} className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm">
+                            <div className="mb-2 flex flex-wrap items-center gap-2">
+                              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold">
+                                {lineRoleLabel(line)}
+                              </span>
+                              {!line.existingFamilyLine ? (
+                                <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
+                                  Existing number
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="w-full max-w-[22ch] rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 shadow-[inset_0_1px_2px_rgba(15,23,42,0.05)]">
+                              {line.msisdn || "No number available"}
+                            </div>
+                            <p className="mt-2 text-xs text-slate-600">
+                              {offer?.reasonText ?? "No offer changes apply."}
+                            </p>
+                            {!line.existingFamilyLine ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  className="button-secondary"
+                                  onClick={() => onChangeMsisdn(line.id, "")}
+                                >
+                                  Edit number
+                                </button>
+                                {line.role === "SUB" && allowRemoveSubLines ? (
+                                  <button
+                                    type="button"
+                                    className="button-secondary"
+                                    onClick={() => onRemoveLine(line.id)}
+                                  >
+                                    Remove line
+                                  </button>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : null}
+        </>
+      )}
 
       {pickerLine ? (
         <div
@@ -354,32 +530,45 @@ export function LineEditor({
             <div className="mt-1 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
               {pickerAvailableNumbers.length > 0 ? (
                 pickerAvailableNumbers.map((number) => {
+                  const usedByAnotherLine = !!pickerLine && lines.some((candidate) => {
+                    if (candidate.id === pickerLine.id) {
+                      return false;
+                    }
+
+                    return candidate.msisdn.trim() === number.msisdn;
+                  });
                   const isBindingBlocked =
                     number.inBinding && !number.bindingCompatibleWithRenewalOffer;
+                  const isUnavailable = usedByAnotherLine || isBindingBlocked;
+                  const unavailableReason = usedByAnotherLine
+                    ? "Already added to another line"
+                    : isBindingBlocked
+                      ? "Cannot be added due to binding incompatibility"
+                      : null;
 
                   return (
                   <button
                     key={number.msisdn}
                     type="button"
                     className={`w-full rounded-lg border px-3 py-2 text-left text-sm font-medium transition ${
-                      isBindingBlocked
+                      isUnavailable
                         ? "cursor-not-allowed border-red-300 bg-red-50 text-red-800"
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50"
                     }`}
                     onClick={() => {
-                      if (isBindingBlocked) {
+                      if (isUnavailable) {
                         return;
                       }
 
                       onChangeMsisdn(pickerLine.id, number.msisdn, "picker");
                       setNumberPickerLineId(null);
                     }}
-                    disabled={isBindingBlocked}
+                    disabled={isUnavailable}
                   >
                     <span>{number.msisdn}</span>
-                    {isBindingBlocked ? (
+                    {unavailableReason ? (
                       <span className="mt-1 block text-xs font-normal text-red-700">
-                        Cannot be added due to binding incompatibility
+                        {unavailableReason}
                       </span>
                     ) : null}
                   </button>
@@ -405,10 +594,15 @@ export function LineEditor({
         </div>
       ) : null}
 
-      {!hasNoChangeLines ? (
+      {showAddLineAction && !familyPlanListMode ? (
         <div className="pt-1">
-          <button type="button" className="button-secondary" onClick={() => onAddSubLine()}>
-            Add extra line
+          <button
+            type="button"
+            className={`button-secondary ${addLineDisabled ? "cursor-not-allowed opacity-60 hover:translate-y-0" : ""}`}
+            onClick={() => onAddSubLine()}
+            disabled={addLineDisabled}
+          >
+            {addLineLabel}
           </button>
         </div>
       ) : null}

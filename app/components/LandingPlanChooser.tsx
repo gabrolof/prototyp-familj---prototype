@@ -70,7 +70,7 @@ export function LandingPlanChooser({ tiers }: LandingPlanChooserProps) {
         </p>
       </section>
 
-      <section className="mb-6 rounded-2xl border border-slate-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 shadow-[0_18px_30px_-24px_rgba(15,23,42,0.75)]">
+      <section className="mb-2 rounded-2xl border border-slate-300 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 p-5 shadow-[0_18px_30px_-24px_rgba(15,23,42,0.75)]">
         <p className="mb-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-ink shadow-sm">
           Existing Customer Path
         </p>
@@ -96,6 +96,11 @@ export function LandingPlanChooser({ tiers }: LandingPlanChooserProps) {
           </div>
         </div>
       </section>
+      <div className="mb-6 text-right">
+        <Link href="/alternative" className="text-xs font-medium text-slate-600 underline hover:text-slate-900">
+          Try Alternative Flow
+        </Link>
+      </div>
     </>
   );
 }

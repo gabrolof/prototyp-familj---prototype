@@ -13,6 +13,8 @@ interface DeviceSelectorProps {
   devices: DeviceDefinition[];
   deviceLockReasonByLineId?: Record<string, string | undefined>;
   onSelectDevice: (lineId: string, payload: { deviceId: string; selection: DeviceSelection } | null) => void;
+  hidePricingDetails?: boolean;
+  collapseLockedLines?: boolean;
 }
 
 type DeviceModalStep = "LIST" | "DETAIL";
@@ -86,6 +88,8 @@ export function DeviceSelector({
   devices,
   deviceLockReasonByLineId = {},
   onSelectDevice,
+  hidePricingDetails = false,
+  collapseLockedLines = false,
 }: DeviceSelectorProps) {
   const [activeLineId, setActiveLineId] = useState<string | null>(null);
   const [modalStep, setModalStep] = useState<DeviceModalStep>("LIST");
@@ -93,11 +97,21 @@ export function DeviceSelector({
   const [selectedColor, setSelectedColor] = useState<string>("");
   const [selectedMemory, setSelectedMemory] = useState<DeviceMemoryOption>("128GB");
   const [selectedPaymentPeriod, setSelectedPaymentPeriod] = useState<DevicePaymentPeriod>("24_MONTH");
+  const [isLockedLinesOpen, setIsLockedLinesOpen] = useState(false);
 
   const listDevices = useMemo(() => devices.slice(0, 3), [devices]);
   const activeLine = activeLineId ? lines.find((line) => line.id === activeLineId) ?? null : null;
   const selectedDevice =
     selectedDeviceId ? devices.find((device) => device.id === selectedDeviceId) ?? null : null;
+  const editableDeviceLines = useMemo(
+    () => lines.filter((line) => !deviceLockReasonByLineId[line.id]),
+    [lines, deviceLockReasonByLineId],
+  );
+  const lockedDeviceLines = useMemo(
+    () => lines.filter((line) => !!deviceLockReasonByLineId[line.id]),
+    [lines, deviceLockReasonByLineId],
+  );
+  const linesForPrimaryList = collapseLockedLines ? editableDeviceLines : lines;
 
   const closeModal = () => {
     setActiveLineId(null);
@@ -214,7 +228,9 @@ export function DeviceSelector({
                         <div className="p-3">
                           <p className="font-semibold text-ink">{device.name}</p>
                           <p className="mt-1 text-xs text-slate-600">{device.shortDescription}</p>
-                          <p className="mt-2 text-sm font-semibold text-ink">{monthlyPrice} SEK/mo</p>
+                          {!hidePricingDetails ? (
+                            <p className="mt-2 text-sm font-semibold text-ink">{monthlyPrice} SEK/mo</p>
+                          ) : null}
                         </div>
                       </button>
                     );
@@ -308,7 +324,9 @@ export function DeviceSelector({
                                 onClick={() => setSelectedPaymentPeriod(option)}
                               >
                                 <span>{paymentLabel(option)}</span>
-                                <span className="font-semibold">{detailText}</span>
+                                {!hidePricingDetails ? (
+                                  <span className="font-semibold">{detailText}</span>
+                                ) : null}
                               </button>
                             );
                           })}
@@ -352,81 +370,143 @@ export function DeviceSelector({
         </div>
 
         <div className="space-y-3">
-        {lines.map((line) => {
-          const selectedLineDevice = line.deviceId ? devices.find((device) => device.id === line.deviceId) : null;
-          const lockReason = deviceLockReasonByLineId[line.id];
-          const isDeviceLocked = !!lockReason;
-          const effectiveSelection =
-            selectedLineDevice && line.deviceSelection
-              ? line.deviceSelection
-                : selectedLineDevice
-                  ? {
-                      color: getDefaultColor(selectedLineDevice.id),
-                      memory: "128GB" as DeviceMemoryOption,
-                      paymentPeriod: "24_MONTH" as DevicePaymentPeriod,
-                    }
-                  : null;
-            const lineDeviceMonthly =
-              selectedLineDevice && effectiveSelection
-                ? getDeviceMonthlyForPeriod(selectedLineDevice, effectiveSelection.paymentPeriod)
-                : 0;
-            const lineDeviceOneTime =
-              selectedLineDevice && effectiveSelection?.paymentPeriod === "DIRECT"
-                ? getDeviceTotalPrice(selectedLineDevice)
-                : 0;
+          {linesForPrimaryList.length > 0 ? (
+            linesForPrimaryList.map((line) => {
+              const selectedLineDevice = line.deviceId
+                ? devices.find((device) => device.id === line.deviceId)
+                : null;
+              const lockReason = deviceLockReasonByLineId[line.id];
+              const isDeviceLocked = !!lockReason;
+              const effectiveSelection =
+                selectedLineDevice && line.deviceSelection
+                  ? line.deviceSelection
+                  : selectedLineDevice
+                    ? {
+                        color: getDefaultColor(selectedLineDevice.id),
+                        memory: "128GB" as DeviceMemoryOption,
+                        paymentPeriod: "24_MONTH" as DevicePaymentPeriod,
+                      }
+                    : null;
+              const lineDeviceMonthly =
+                selectedLineDevice && effectiveSelection
+                  ? getDeviceMonthlyForPeriod(selectedLineDevice, effectiveSelection.paymentPeriod)
+                  : 0;
+              const lineDeviceOneTime =
+                selectedLineDevice && effectiveSelection?.paymentPeriod === "DIRECT"
+                  ? getDeviceTotalPrice(selectedLineDevice)
+                  : 0;
 
-            return (
-              <div key={line.id} className="rounded-xl border border-slate-200 bg-white/95 p-3 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {line.role === "MAIN" ? "Primary line" : "Extra line"} - {line.msisdn || "No number entered"}
-                    </p>
-                  {selectedLineDevice && effectiveSelection ? (
-                    <div className="mt-1 text-xs text-slate-600">
-                      <p className="font-medium text-slate-700">{selectedLineDevice.name}</p>
-                        <p>
-                          {effectiveSelection.color}, {effectiveSelection.memory},{" "}
-                          {paymentLabel(effectiveSelection.paymentPeriod)}
-                        </p>
-                        {lineDeviceMonthly > 0 ? <p>Device cost: {lineDeviceMonthly} SEK/mo</p> : null}
-                        {lineDeviceOneTime > 0 ? <p>Device cost: {lineDeviceOneTime} SEK one-time</p> : null}
-                      </div>
-                  ) : (
-                    <p className="mt-1 text-xs text-slate-500">No phone selected.</p>
-                  )}
-                  {isDeviceLocked ? (
-                    <p className="mt-1 text-xs font-medium text-red-700">
-                      {lockReason}
-                    </p>
-                  ) : null}
-                </div>
+              return (
+                <div key={line.id} className="rounded-xl border border-slate-200 bg-white/95 p-3 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">
+                        {line.role === "MAIN" ? "Primary line" : "Extra line"} -{" "}
+                        {line.msisdn || "No number entered"}
+                      </p>
+                      {selectedLineDevice && effectiveSelection ? (
+                        <div className="mt-1 text-xs text-slate-600">
+                          <p className="font-medium text-slate-700">{selectedLineDevice.name}</p>
+                          <p>
+                            {effectiveSelection.color}, {effectiveSelection.memory},{" "}
+                            {paymentLabel(effectiveSelection.paymentPeriod)}
+                          </p>
+                          {!hidePricingDetails && lineDeviceMonthly > 0 ? (
+                            <p>Device cost: {lineDeviceMonthly} SEK/mo</p>
+                          ) : null}
+                          {!hidePricingDetails && lineDeviceOneTime > 0 ? (
+                            <p>Device cost: {lineDeviceOneTime} SEK one-time</p>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-xs text-slate-500">No phone selected.</p>
+                      )}
+                      {isDeviceLocked ? (
+                        <p className="mt-1 text-xs font-medium text-red-700">{lockReason}</p>
+                      ) : null}
+                    </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className={`button-secondary ${
-                      isDeviceLocked ? "cursor-not-allowed opacity-60 hover:translate-y-0" : ""
-                    }`}
-                    onClick={() => openModalForLine(line)}
-                    disabled={isDeviceLocked}
-                  >
-                    {line.deviceId ? "Change phone" : "Add phone"}
-                  </button>
-                    {line.deviceId ? (
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        className="button-secondary"
-                        onClick={() => onSelectDevice(line.id, null)}
+                        className={`button-secondary ${
+                          isDeviceLocked ? "cursor-not-allowed opacity-60 hover:translate-y-0" : ""
+                        }`}
+                        onClick={() => openModalForLine(line)}
+                        disabled={isDeviceLocked}
                       >
-                        Remove phone
+                        {line.deviceId ? "Change phone" : "Add phone"}
                       </button>
-                    ) : null}
+                      {line.deviceId ? (
+                        <button
+                          type="button"
+                          className="button-secondary"
+                          onClick={() => onSelectDevice(line.id, null)}
+                        >
+                          Remove phone
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              No lines are currently eligible for device changes.
+            </p>
+          )}
+
+          {collapseLockedLines && lockedDeviceLines.length > 0 ? (
+            <div className="space-y-3">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2 text-left"
+                onClick={() => setIsLockedLinesOpen((open) => !open)}
+                aria-expanded={isLockedLinesOpen}
+              >
+                <span className="text-sm font-semibold text-slate-800">
+                  Unchanged device lines ({lockedDeviceLines.length})
+                </span>
+                <span className="text-xs font-medium text-slate-600">
+                  {isLockedLinesOpen ? "Hide" : "Show"}
+                </span>
+              </button>
+
+              {isLockedLinesOpen ? (
+                <div className="space-y-3">
+                  {lockedDeviceLines.map((line) => {
+                    const selectedLineDevice = line.deviceId
+                      ? devices.find((device) => device.id === line.deviceId)
+                      : null;
+                    const lockReason = deviceLockReasonByLineId[line.id];
+
+                    return (
+                      <div
+                        key={line.id}
+                        className="rounded-xl border border-slate-300 bg-white p-3 shadow-sm"
+                      >
+                        <p className="text-sm font-semibold">
+                          {line.role === "MAIN" ? "Primary line" : "Extra line"} -{" "}
+                          {line.msisdn || "No number entered"}
+                        </p>
+                        {selectedLineDevice ? (
+                          <p className="mt-1 text-xs text-slate-600">
+                            Existing device: <span className="font-medium">{selectedLineDevice.name}</span>
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-xs text-slate-600">No device change available.</p>
+                        )}
+                        {lockReason ? (
+                          <p className="mt-1 text-xs font-medium text-red-700">{lockReason}</p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
 
